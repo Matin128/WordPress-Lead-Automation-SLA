@@ -1,0 +1,350 @@
+{
+  "name": "WordPress Lead Automation & SLA Monitoring",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wordpress-lead-webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -512,
+        1248
+      ],
+      "id": "e876bb4c-d8d6-449b-9aa8-88db297d7c82",
+      "name": "Webhook",
+      "webhookId": "wordpress-lead-webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a2f0a129-cb0d-44cc-b1b9-af084efe29ed",
+              "name": "first_name",
+              "value": "={{ $json.body.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "ced50591-51c5-47be-971b-3c7d4af43a17",
+              "name": "last_name",
+              "value": "={{ $json.body.last_name }}",
+              "type": "string"
+            },
+            {
+              "id": "3880d2f8-2687-40bd-87a7-b120b8fa314f",
+              "name": "website_url",
+              "value": "={{ $json.body.website }}",
+              "type": "string"
+            },
+            {
+              "id": "ff3f43ca-d666-4a5b-abca-b62919faec63",
+              "name": "service_type",
+              "value": "={{ $json.body.service }}",
+              "type": "string"
+            },
+            {
+              "id": "251d3e57-f21e-48c4-9f73-f9f96cb58bae",
+              "name": "urgency",
+              "value": "={{ $json.body.urgency }}",
+              "type": "string"
+            },
+            {
+              "id": "c7a26447-2576-46be-8f09-4f627d856b42",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "cc4a4cd1-2784-4b05-9721-2abc8e5931dc",
+              "name": "status",
+              "value": "نیاز به بررسی",
+              "type": "string"
+            },
+            {
+              "id": "328a6e73-c3c3-4b9d-b4f0-c029fc9df498",
+              "name": "created_at",
+              "value": "={{ $now.format('yyyy-MM-dd HH:mm') }}",
+              "type": "string"
+            },
+            {
+              "id": "758c7799-610a-487c-b57d-5cfb798e215b",
+              "name": "entry_id",
+              "value": "={{ $json.body.entry_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -288,
+        1248
+      ],
+      "id": "8d2fcbc5-473f-40db-9f0e-d8827a1e6554",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsCode": "function escapeHTML(text) {\n  if (!text) return '';\n  return String(text)\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;');\n}\n\nfor (const item of $input.all()) {\n  item.json.first_name_safe = escapeHTML(item.json.first_name);\n  item.json.last_name_safe = escapeHTML(item.json.last_name);\n  item.json.website_url_safe = escapeHTML(item.json.website_url);\n  item.json.service_type_safe = escapeHTML(item.json.service_type);\n  item.json.urgency_safe = escapeHTML(item.json.urgency);\n  item.json.email_safe = escapeHTML(item.json.email);\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        1136
+      ],
+      "id": "d4cef61a-d89e-4468-8f86-d82afae58c0c",
+      "name": "Sanitize Input"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "نام": "={{ $json.first_name }}",
+            "نام خانوادگی": "={{ $json.last_name }}",
+            "ادرس سایت": "={{ $json.website_url }}",
+            "نوع سرویس": "={{ $json.service_type }}",
+            "سطح اضطراری": "={{ $json.urgency }}",
+            "ایمیل": "={{ $json.email }}",
+            "وضعیت لید": "={{ $json.status }}",
+            "تاریخ ثبت": "={{ $json.created_at }}",
+            "ایدی فرم": "={{ $json.entry_id }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -64,
+        1376
+      ],
+      "id": "67819be7-a46f-4190-be6e-247f46b73ed6",
+      "name": "Append row in sheet1",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🚨 <b>درخواست پشتیبانی جدید ثبت شد!</b>\n\n👤 <b>اطلاعات کاربر:</b>\n▫️ <b>نام و نام خانوادگی:</b> {{ $json.first_name_safe }} {{ $json.last_name_safe }}\n📧 <b>ایمیل:</b> {{ $json.email_safe }}\n\n🌐 <b>مشخصات فنی:</b>\n▫️ <b>آدرس سایت:</b> {{ $json.website_url_safe }}\n🛠 <b>نوع خدمت:</b> {{ $json.service_type_safe }}\n⚡️ <b>سطح اضطرار:</b> {{ $json.urgency_safe }}\n\n📅 <b>زمان ثبت:</b> {{ $json.created_at }}\n\n📌 <i>لطفاً وضعیت بررسی این لید را در فایل Google Sheets به‌روزرسانی کنید.</i>",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        160,
+        1136
+      ],
+      "id": "a7eb7522-5c32-4d7b-92ac-5f014f02a30a",
+      "name": "Send Telegram Notification",
+      "webhookId": "fcd853eb-e8c1-4555-837e-8bb745b34552",
+      "credentials": {
+        "telegramApi": {
+          "id": "4N54KO6l4BLtzYFt",
+          "name": "n8n Site Guard"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -544,
+        1776
+      ],
+      "id": "03ac86ca-09b8-441a-a038-e1c1dd502a90",
+      "name": "Every Hour SLA Check"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "وضعیت لید",
+              "lookupValue": "نیاز به بررسی"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -320,
+        1776
+      ],
+      "id": "b290dd29-f722-4fe7-93a9-bfba219b06ca",
+      "name": "Fetch Unprocessed Leads",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function escapeHTML(text) {\n  if (!text) return '';\n  return String(text)\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;');\n}\n\nconst now = new Date();\nconst overdueLeads = [];\n\nfor (const item of $input.all()) {\n  const createdAtStr = item.json['تاریخ ثبت'];\n  if (!createdAtStr) continue;\n  \n  const createdAt = new Date(createdAtStr.replace(' ', 'T'));\n  const diffHours = (now - createdAt) / (1000 * 60 * 60);\n  \n  if (diffHours >= 24) {\n    item.json.first_name_safe = escapeHTML(item.json['نام']);\n    item.json.last_name_safe = escapeHTML(item.json['نام خانوادگی']);\n    item.json.website_url_safe = escapeHTML(item.json['ادرس سایت']);\n    item.json.service_type_safe = escapeHTML(item.json['نوع سرویس']);\n    item.json.urgency_safe = escapeHTML(item.json['سطح اضطراری']);\n    item.json.email_safe = escapeHTML(item.json['ایمیل']);\n    item.json.created_at_safe = escapeHTML(item.json['تاریخ ثبت']);\n    overdueLeads.push(item);\n  }\n}\n\nreturn overdueLeads;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        1776
+      ],
+      "id": "e6e07ef8-7745-45cd-aa02-2fc77a43a412",
+      "name": "Filter > 24h & Sanitize"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=⚠️ <b>هشدار عدم بررسی لید (SLA)!</b>\n\nکارشناسان محترم، لید زیر بیش از ۲۴ ساعت است که تعیین وضعیت نشده است:\n\n👤 <b>نام مشتری:</b> {{ $json.first_name_safe }} {{ $json.last_name_safe }}\n🌐 <b>آدرس سایت:</b> {{ $json.website_url_safe }}\n📧 <b>ایمیل:</b> {{ $json.email_safe }}\n🛠 <b>خدمت درخواستی:</b> {{ $json.service_type_safe }}\n⚡️ <b>سطح اضطرار:</b> {{ $json.urgency_safe }}\n📅 <b>زمان ثبت فرم:</b> {{ $json.created_at_safe }}\n\n📌 <i>لطفاً هرچه سریع‌تر جهت تماس یا بروزرسانی فایل Google Sheets اقدام کنید.</i>",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        128,
+        1776
+      ],
+      "id": "e24deaac-32f9-41c3-bfdc-ff8baa59ec70",
+      "name": "Send SLA Warning Telegram",
+      "webhookId": "846eaba1-9a29-477a-9b2a-029731cce1e0",
+      "credentials": {
+        "telegramApi": {
+          "id": "4N54KO6l4BLtzYFt",
+          "name": "n8n Site Guard"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Sanitize Input",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanitize Input": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Hour SLA Check": {
+      "main": [
+        [
+          {
+            "node": "Fetch Unprocessed Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Unprocessed Leads": {
+      "main": [
+        [
+          {
+            "node": "Filter > 24h & Sanitize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter > 24h & Sanitize": {
+      "main": [
+        [
+          {
+            "node": "Send SLA Warning Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "7ed436b3-c66f-4e02-ae92-56e8cd356684",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6aa36ad0122b7a04ca25227e43429297f24bed98ebdbf794efc96523afb59dbf"
+  },
+  "nodeGroups": [],
+  "id": "eOry5OaHQknltYLb",
+  "tags": []
+}
