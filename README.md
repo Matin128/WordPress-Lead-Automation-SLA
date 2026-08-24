@@ -16,7 +16,6 @@
 
 <p align="center">
   <a href="https://github.com/user-attachments/assets/e9d93e1a-07a3-4678-901d-58bcd8e261bf">
-    <img src="https://img.shields.io/badge/▶️_مشاهده_ویدیوی_دمو-181717?style=for-the-badge&logo=github&logoColor=white" alt="مشاهده دمو">
   </a>
 </p>
 
